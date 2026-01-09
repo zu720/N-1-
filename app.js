@@ -1,14 +1,17 @@
-// 会員 → レシート → 明細可視化（依存なし）
-// 列名が違う場合は COL をあなたのCSVに合わせる
+// 会員 → （擬似レシートID生成）→ レシート → 明細可視化（依存なし）
+//
+// ★重要：CSVに「レシートID列」は不要。
+// 代わりに、会員+店舗+買上日+買上時間 から擬似レシートIDを作る。
 
 const COL = {
   member: "匿名会員番号",
-  receipt: "レシートID",     // 例: 取引ID / 伝票番号 / トランザクションID
   date: "買上日",
-  storeName: "店舗名",
+  time: "買上時間",       // 必須：同日複数回を分けるため
+  storeName: "店舗名",     // 店舗コードがあるならそっちでもOK（下の COL.storeCode を使う）
+  // storeCode: "店舗コード", // ←ある場合はこれを有効にして storeKey を強化しても良い
   item: "商品",
   amount: "買上金額",
-  qty: "買上点数",           // 任意：無ければ 1 扱い
+  qty: "買上点数",         // 任意：無ければ 1 扱い
 };
 
 let RAW = [];
@@ -23,19 +26,48 @@ function setStatus(msg){ $("#status").textContent = msg; }
 function fmtInt(n){ return new Intl.NumberFormat("ja-JP").format(Math.round(n)); }
 function fmtYen(n){ return new Intl.NumberFormat("ja-JP").format(Math.round(n)); }
 
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+}
+
 function toDateKey(v){
   if(!v) return "";
   const s = String(v).trim().replaceAll("/", "-");
+  // 2026-01-09 形式の想定。違うならここで正規化。
   return s.length >= 10 ? s.slice(0,10) : s;
 }
+
+function normalizeTime(v){
+  // "13:05", "13:05:22", "1305", "130522" などを "HH:MM:SS" に寄せる
+  if(!v) return "";
+  const s0 = String(v).trim();
+
+  if(s0.includes(":")){
+    const parts = s0.split(":").map(x=>x.trim()).filter(Boolean);
+    const hh = (parts[0] ?? "00").padStart(2,"0").slice(0,2);
+    const mm = (parts[1] ?? "00").padStart(2,"0").slice(0,2);
+    const ss = (parts[2] ?? "00").padStart(2,"0").slice(0,2);
+    return `${hh}:${mm}:${ss}`;
+  }
+
+  const s = s0.replace(/\D/g,""); // 数字以外除去
+  if(s.length === 6){
+    return `${s.slice(0,2)}:${s.slice(2,4)}:${s.slice(4,6)}`;
+  }
+  if(s.length === 4){
+    return `${s.slice(0,2)}:${s.slice(2,4)}:00`;
+  }
+  if(s.length === 2){
+    return `${s.slice(0,2)}:00:00`;
+  }
+  return ""; // パースできない場合
+}
+
 function parseNum(v){
   if(v === null || v === undefined) return 0;
   const s = String(v).replaceAll(",", "").trim();
   const x = Number(s);
   return Number.isFinite(x) ? x : 0;
-}
-function escapeHtml(s){
-  return s.replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
 }
 
 // ★ 必須カラム注意書き（COLから自動生成）
@@ -43,12 +75,13 @@ function renderRequiredColumnsNote(){
   const el = document.getElementById("reqCols");
   if(!el) return;
 
-  const required = [COL.member, COL.receipt, COL.date, COL.storeName, COL.item, COL.amount];
+  const required = [COL.member, COL.date, COL.time, COL.storeName, COL.item, COL.amount];
   const optional = [COL.qty];
 
   el.innerHTML =
     `必須: ${required.map(c=>`<span>${escapeHtml(c)}</span>`).join(" / ")}`
-    + `<br>任意: ${optional.map(c=>`<span>${escapeHtml(c)}</span>`).join(" / ")}（無い場合は点数=1扱い）`;
+    + `<br>任意: ${optional.map(c=>`<span>${escapeHtml(c)}</span>`).join(" / ")}（無い場合は点数=1扱い）`
+    + `<br><span class="muted">※ レシートID列は不要：会員×店舗×日時から自動生成</span>`;
 }
 renderRequiredColumnsNote();
 
@@ -82,13 +115,30 @@ function parseCSV(text){
   return rows;
 }
 
+// ★ 擬似レシートID生成：会員 + 店舗 + 日付 + 時刻（秒まで）
+// 事故が怖いなら storeCode も混ぜるとより堅い
+function makePseudoReceiptId(r){
+  const member = r.__member || "NA";
+  const store = r.__store || "NA";
+  const dt = `${r.__date} ${r.__time}`.trim();
+
+  // 文字を少し潰して短くする
+  const base = `${member}|${store}|${dt}`;
+  // 安直ハッシュ（短くするだけ・暗号じゃない）
+  let h = 0;
+  for(let i=0;i<base.length;i++){
+    h = (h * 31 + base.charCodeAt(i)) >>> 0;
+  }
+  return `R${h.toString(16)}_${r.__date.replaceAll("-","")}_${r.__time.replaceAll(":","")}`;
+}
+
 function loadFromText(text){
   const grid = parseCSV(text);
   if(grid.length < 2) throw new Error("CSVが空っぽ");
 
   HEADERS = grid[0].map(h=>h.trim());
 
-  const required = [COL.member, COL.receipt, COL.date, COL.storeName, COL.item, COL.amount];
+  const required = [COL.member, COL.date, COL.time, COL.storeName, COL.item, COL.amount];
   const missing = required.filter(c => !HEADERS.includes(c));
   if(missing.length){
     throw new Error(`必須列が足りない: ${missing.join(", ")}（CSVヘッダ or COLを合わせて）`);
@@ -100,14 +150,21 @@ function loadFromText(text){
       const o = {};
       for(let j=0;j<HEADERS.length;j++) o[HEADERS[j]] = r[j] ?? "";
 
-      o.__member  = String(o[COL.member]).trim();
-      o.__receipt = String(o[COL.receipt]).trim();
-      o.__date    = toDateKey(o[COL.date]);
-      o.__store   = String(o[COL.storeName]).trim();
-      o.__item    = String(o[COL.item]).trim();
-      o.__amt     = parseNum(o[COL.amount]);
-      o.__qty     = HEADERS.includes(COL.qty) ? parseNum(o[COL.qty]) : 1;
+      o.__member = String(o[COL.member]).trim();
+      o.__date   = toDateKey(o[COL.date]);
+      o.__time   = normalizeTime(o[COL.time]);
+      o.__store  = String(o[COL.storeName]).trim();
+      o.__item   = String(o[COL.item]).trim();
+      o.__amt    = parseNum(o[COL.amount]);
+      o.__qty    = HEADERS.includes(COL.qty) ? parseNum(o[COL.qty]) : 1;
 
+      // 時刻が壊れてるとレシートが作れないので、ここでエラーにする（安全側）
+      if(!o.__time){
+        // ここで緩めたいなら "00:00:00" を入れて続行できるが、混ざるので非推奨
+        throw new Error(`買上時間が解釈できない行があります。列「${COL.time}」の形式を確認してください（例: 13:05 や 130522 など）`);
+      }
+
+      o.__receipt = makePseudoReceiptId(o);
       return o;
     });
 
@@ -116,7 +173,7 @@ function loadFromText(text){
   MEMBER_LIST = Array.from(set).sort();
 
   refreshMemberSelect();
-  setStatus(`読込OK: ${fmtInt(RAW.length)}行 / 会員数: ${fmtInt(MEMBER_LIST.length)}`);
+  setStatus(`読込OK: ${fmtInt(RAW.length)}行 / 会員数: ${fmtInt(MEMBER_LIST.length)}（レシートIDは自動生成）`);
 }
 
 function refreshMemberSelect(){
@@ -138,11 +195,17 @@ function buildReceiptsForMember(memberId, dateFilter){
 
   const map = new Map();
   for(const r of lines){
-    if(!r.__receipt) continue;
-    if(!map.has(r.__receipt)){
-      map.set(r.__receipt, { receiptId: r.__receipt, date: r.__date, store: r.__store, lines: [] });
+    const key = r.__receipt;
+    if(!map.has(key)){
+      map.set(key, {
+        receiptId: key, // 内部用（表示には出さない）
+        date: r.__date,
+        time: r.__time,
+        store: r.__store,
+        lines: []
+      });
     }
-    map.get(r.__receipt).lines.push(r);
+    map.get(key).lines.push(r);
   }
 
   const receipts = Array.from(map.values()).map(rcpt=>{
@@ -152,9 +215,9 @@ function buildReceiptsForMember(memberId, dateFilter){
     // 同一商品はレシート内でまとめる（見やすさ）
     const itemMap = new Map();
     for(const x of rcpt.lines){
-      const key = x.__item || "（不明商品）";
-      if(!itemMap.has(key)) itemMap.set(key, { item:key, amt:0, qty:0 });
-      const o = itemMap.get(key);
+      const name = x.__item || "（不明商品）";
+      if(!itemMap.has(name)) itemMap.set(name, { item:name, amt:0, qty:0 });
+      const o = itemMap.get(name);
       o.amt += x.__amt;
       o.qty += x.__qty;
     }
@@ -163,9 +226,11 @@ function buildReceiptsForMember(memberId, dateFilter){
     return {...rcpt, sales, qty, items};
   });
 
+  // 日付→時刻→店舗 で並べる（閲覧体験が自然）
   receipts.sort((a,b)=>{
     if(a.date !== b.date) return a.date.localeCompare(b.date);
-    return a.receiptId.localeCompare(b.receiptId);
+    if(a.time !== b.time) return a.time.localeCompare(b.time);
+    return a.store.localeCompare(b.store);
   });
 
   return receipts;
@@ -197,8 +262,9 @@ function renderCurrentReceipt(){
   CUR = Math.max(0, Math.min(CUR, RECEIPTS.length - 1));
   const r = RECEIPTS[CUR];
 
-  $("#rcptIndex").textContent = `${CUR+1} / ${RECEIPTS.length}  receipt=${r.receiptId}`;
-  $("#rcptMeta").textContent  = `${r.date}  |  ${r.store}  |  receipt=${r.receiptId}`;
+  // ★表示から receiptId は消す（要望通り）
+  $("#rcptIndex").textContent = `${CUR+1} / ${RECEIPTS.length}`;
+  $("#rcptMeta").textContent  = `${r.date} ${r.time}  |  ${r.store}`;
 
   $("#r_sales").textContent = fmtYen(r.sales);
   $("#r_qty").textContent   = fmtInt(r.qty);
@@ -236,7 +302,7 @@ function apply(){
 
   renderKPIs();
   renderCurrentReceipt();
-  setStatus(`会員=${memberId} / レシート=${fmtInt(RECEIPTS.length)}件`);
+  setStatus(`会員=${memberId} / レシート=${fmtInt(RECEIPTS.length)}件（レシートIDは自動生成）`);
 }
 
 function clearAll(){
@@ -301,3 +367,4 @@ async function loadFile(file){
     setStatus("読込失敗: " + (err?.message ?? String(err)));
   }
 }
+
