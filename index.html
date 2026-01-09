@@ -110,8 +110,12 @@
 
     .listBox{ border:1px solid var(--line); border-radius: var(--radius); background:#fff; overflow:hidden; }
     .listHeader{ padding:12px 14px; border-bottom:1px solid var(--line); background:#fff; position: sticky; top: 0; z-index: 5; }
-    .listBody{ max-height: 620px; overflow:auto; padding: 10px; }
-
+    .listBody{/* 画面の高さに追従（左のレシート一覧がはみ出さない） */
+  max-height: calc(100vh - 420px);
+  min-height: 220px;
+  overflow:auto;
+  padding: 10px;
+}
     .rcptBtn{
       width:100%; text-align:left; border:1px solid var(--line);
       background:#fff; border-radius: 14px; padding:10px 12px;
@@ -138,7 +142,11 @@
     .nav{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .metaLine{ margin-top:8px; font-weight:800; }
     .hintKeys{ margin-top:6px; }
-    .receiptBody{ padding:14px; }
+    .receiptBody{
+  max-height: calc(100vh - 340px);
+  overflow:auto;
+  padding:14px;
+}
 
     .bar{ height:10px; border-radius:999px; background: rgba(37,99,235,.12); overflow:hidden; }
     .bar > div{ height:100%; background: rgba(37,99,235,.70); }
@@ -320,4 +328,5 @@
   <script src="./app.js"></script>
 </body>
 </html>
+
 
