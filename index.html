@@ -3,112 +3,214 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>会員レシート：時系列タイムライン</title>
-  <style>
-    :root{--bg:#0b0f14;--p:#121826;--line:#273247;--t:#e6edf3;--m:#9aa4b2;--a:#60a5fa;}
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--t);font-family:system-ui}
-    .wrap{max-width:1300px;margin:20px auto;padding:0 16px}
-    .card{background:rgba(18,24,38,.92);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
-    h1{font-size:16px;margin:0 0 8px 0}
-    h2{font-size:14px;margin:0 0 10px 0;color:var(--m)}
-    label{display:block;font-size:12px;color:var(--m);margin:0 0 6px 2px}
-    input,select{width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:#0f1522;color:var(--t)}
-    .drop{border:2px dashed #3a4967;border-radius:14px;padding:18px;text-align:center;color:var(--m)}
-    .btn{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#0f1522;color:var(--t);cursor:pointer}
-    .btn:hover{border-color:#3a4967}
-    .row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
-    @media(max-width:1100px){.row{grid-template-columns:1fr 1fr}}
-    @media(max-width:700px){.row{grid-template-columns:1fr}}
-    .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-    @media(max-width:1100px){.kpi{grid-template-columns:1fr 1fr}}
-    .tile{border:1px solid var(--line);border-radius:14px;padding:12px;background:#0f1522}
-    .tile .k{font-size:12px;color:var(--m)} .tile .v{font-size:18px;font-weight:800;margin-top:4px}
-    .muted{color:var(--m)}
-    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;}
-    table{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-    th,td{padding:10px;border-bottom:1px solid rgba(39,50,71,.7);font-size:12px;text-align:left}
-    th{color:var(--m);background:#0f1522} tr:last-child td{border-bottom:none}
-    .right{text-align:right}
-    .bar{height:10px;border-radius:999px;background:rgba(96,165,250,.25);overflow:hidden}
-    .bar > div{height:100%;background:rgba(96,165,250,.78)}
-    .small{font-size:12px;color:var(--m)}
-    .warn{color:#fbbf24}
+  <h1>レシート見える君（トモズ）</h1>
+<div class="small muted">会員単位でレシート内容を可視化する検証ツール</div></title>
 
-    /* ===== Timeline layout ===== */
-    .layout{display:grid;grid-template-columns:380px 1fr;gap:12px;align-items:start}
-    @media(max-width:1100px){.layout{grid-template-columns:1fr}}
-    .pane{border:1px solid var(--line);border-radius:14px;background:#0f1522;overflow:hidden}
-    .paneHead{padding:12px;border-bottom:1px solid rgba(39,50,71,.7);display:flex;gap:10px;align-items:center;justify-content:space-between}
-    .paneBody{max-height:640px;overflow:auto}
-    .chip{font-size:12px;color:var(--m)}
-    .list{list-style:none;margin:0;padding:0}
-    .it{border-bottom:1px solid rgba(39,50,71,.55);padding:10px;cursor:pointer}
-    .it:hover{background:rgba(96,165,250,.08)}
-    .it.active{outline:2px solid rgba(96,165,250,.5);outline-offset:-2px;background:rgba(96,165,250,.10)}
-    .itTop{display:flex;justify-content:space-between;gap:10px}
-    .itMid{margin-top:4px;display:flex;justify-content:space-between;gap:10px}
-    .itAmt{font-weight:800}
-    .nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .receiptBox{border:1px solid var(--line);border-radius:14px;padding:12px;background:#0f1522}
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --accent:#2563eb;
+      --accent2:#1d4ed8;
+      --shadow: 0 10px 24px rgba(17,24,39,.08);
+      --radius: 16px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 20% -10%, rgba(37,99,235,.10), transparent 60%),
+                  radial-gradient(900px 500px at 90% 0%, rgba(29,78,216,.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+    }
+    .wrap{ max-width:1100px; margin:28px auto; padding:0 16px; }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      padding:18px;
+      margin:14px 0;
+      box-shadow: var(--shadow);
+    }
+    h1{ font-size:16px; margin:0 0 10px 0; letter-spacing:.2px; }
+    h2{ font-size:13px; margin:0 0 12px 0; color:var(--muted); font-weight:700; }
+
+    .row{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    @media(max-width:900px){ .row{ grid-template-columns:1fr; } }
+
+    label{ display:block; font-size:12px; color:var(--muted); margin:0 0 6px 2px; }
+    input,select{
+      width:100%;
+      padding:11px 12px;
+      border-radius: 12px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      outline:none;
+      transition: box-shadow .15s, border-color .15s;
+    }
+    input:focus,select:focus{
+      border-color: rgba(37,99,235,.55);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+    }
+
+    .drop{
+      border:2px dashed rgba(37,99,235,.35);
+      border-radius: var(--radius);
+      padding:16px;
+      text-align:center;
+      color:var(--muted);
+      background: linear-gradient(180deg, rgba(37,99,235,.05), rgba(37,99,235,.00));
+    }
+    .drop b{ color:var(--text); }
+
+    .btn{
+      padding:10px 14px;
+      border-radius: 12px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      cursor:pointer;
+      transition: transform .06s, box-shadow .15s, border-color .15s;
+    }
+    .btn:hover{
+      border-color: rgba(37,99,235,.45);
+      box-shadow: 0 10px 20px rgba(37,99,235,.10);
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(37,99,235,1), rgba(29,78,216,1));
+      border-color: rgba(29,78,216,1);
+      color:#fff;
+    }
+    .btn.primary:hover{ box-shadow: 0 14px 26px rgba(37,99,235,.22); }
+
+    .kpi{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+    @media(max-width:900px){ .kpi{ grid-template-columns:1fr 1fr; } }
+    .tile{
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      padding:14px;
+      background:#fff;
+    }
+    .tile .k{ font-size:12px; color:var(--muted); }
+    .tile .v{ font-size:18px; font-weight:800; margin-top:6px; }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      overflow:hidden;
+      background:#fff;
+    }
+    th,td{
+      padding:10px 12px;
+      border-bottom:1px solid var(--line);
+      font-size:12px;
+      text-align:left;
+    }
+    th{
+      background: #f9fafb;
+      color: var(--muted);
+      font-weight:800;
+    }
+    tr:last-child td{ border-bottom:none; }
+    tbody tr:hover td{ background: rgba(37,99,235,.04); }
+
+    .right{text-align:right;}
+    .muted{ color:var(--muted); }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
+    .small{ font-size:12px; color:var(--muted); }
+
+    .receiptBox{
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      padding:0;
+      background: #fff;
+      overflow:hidden;
+    }
+
+    /* ★ 固定ヘッダ（sticky） */
+    .receiptHeader{
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 14px;
+    }
+    .nav{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .metaLine{ margin-top:8px; font-weight:700; }
+    .hintKeys{ margin-top:6px; }
+
+    .receiptBody{ padding:14px; }
+
+    .bar{
+      height:10px;
+      border-radius:999px;
+      background: rgba(37,99,235,.12);
+      overflow:hidden;
+    }
+    .bar > div{
+      height:100%;
+      background: rgba(37,99,235,.70);
+    }
   </style>
 </head>
+
 <body>
   <div class="wrap">
+
     <div class="card">
-      <h1>会員レシート：時系列タイムライン（取引ユニーク＝買上日×買上時間）</h1>
+      <h1>レシート見える君（トモズ）</h1>
+
       <div class="drop" id="drop">
-        <b>CSVをドラッグ&ドロップ</b>（または）
+        <b>明細CSVをここにドラッグ&ドロップ</b>（または）
         <input type="file" id="file" accept=".csv" />
-        <div class="small">
-          必須列（あなたのCSV）：買上日 / 買上時間 / 店舗名 / 商品名 / 買上金額（会員） / 買上点数（会員） / 会員番号/匿名会員番号
+        <div class="small" style="margin-top:10px">
+          <div class="muted">必須カラム名（CSVヘッダにこの文字列が必要）</div>
+          <div class="mono" id="reqCols">-</div>
+          <div class="muted" style="margin-top:6px">
+            ※ 列名が違う場合は <span class="mono">app.js</span> の <span class="mono">COL</span> を修正
+          </div>
         </div>
       </div>
-      <div class="small muted" id="status">CSV未読込</div>
-      <div class="small warn" id="note"></div>
+
+      <div class="small muted" id="status" style="margin-top:10px">CSV未読込</div>
     </div>
 
     <div class="card">
-      <h2>① 会員を選ぶ ＋ 店舗名で絞り込み</h2>
+      <h2>① 会員を選ぶ</h2>
       <div class="row">
         <div>
-          <label>会員（会員番号/匿名会員番号）</label>
+          <label>会員（匿名会員番号）</label>
           <select id="member"><option value="">（CSV読込後に選択）</option></select>
         </div>
         <div>
-          <label>会員検索（部分一致）</label>
+          <label>検索（部分一致）</label>
           <input id="memberSearch" class="mono" placeholder="例: 7130..." />
         </div>
         <div>
-          <label>店舗名</label>
-          <select id="store"><option value="">（全て）</option></select>
-        </div>
-        <div>
-          <label>店舗検索（部分一致）</label>
-          <input id="storeSearch" placeholder="例: 高円寺 / ○○店" />
-        </div>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <div>
-          <label>買上日（任意）</label>
+          <label>絞り込み：買上日（任意）</label>
           <input id="dateFilter" type="date" />
         </div>
-        <div>
-          <label>タイムライン検索（商品名/店舗名）</label>
-          <input id="timelineSearch" placeholder="例: 牛乳 / 惣菜 / ○○店" />
-        </div>
-        <div style="display:flex;gap:10px;align-items:end;">
-          <button class="btn" id="apply" type="button">反映</button>
-          <button class="btn" id="clear" type="button">クリア</button>
-        </div>
-        <div class="small muted" style="display:flex;align-items:end;">
-          左のタイムラインをクリックでレシートにジャンプ
-        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+        <button class="btn primary" id="apply">反映</button>
+        <button class="btn" id="clear">クリア</button>
       </div>
     </div>
 
     <div class="card">
-      <h2>② 時系列タイムライン → レシート詳細</h2>
+      <h2>② レシート単位で切り替え（商品名・金額・点数）</h2>
 
       <div class="kpi">
         <div class="tile"><div class="k">レシート数</div><div class="v" id="k_rcpt">-</div></div>
@@ -117,45 +219,31 @@
         <div class="tile"><div class="k">平均客単価（売上/レシート）</div><div class="v" id="k_atv">-</div></div>
       </div>
 
-      <div class="layout" style="margin-top:12px">
-        <!-- Timeline -->
-        <div class="pane">
-          <div class="paneHead">
-            <div>
-              <div class="chip">タイムライン</div>
-              <div class="small muted mono" id="tlMeta">-</div>
-            </div>
-            <button class="btn" id="jumpNow" type="button">現在位置へ</button>
-          </div>
-          <div class="paneBody">
-            <ul class="list" id="timeline"></ul>
-          </div>
-        </div>
-
-        <!-- Receipt detail -->
-        <div class="receiptBox">
+      <div class="receiptBox" style="margin-top:12px">
+        <!-- ★ 固定ヘッダ（店名・日付・ナビ） -->
+        <div class="receiptHeader">
           <div class="nav">
-            <button class="btn" id="prev">← 前</button>
-            <button class="btn" id="next">次 →</button>
+            <button class="btn" id="prev">← 前のレシート</button>
+            <button class="btn" id="next">次のレシート →</button>
             <span class="muted mono" id="rcptIndex">-</span>
           </div>
 
-          <div style="margin-top:10px">
-            <div class="small muted">レシート情報（買上日×買上時間でユニーク化）</div>
-            <div class="mono" id="rcptMeta">-</div>
+          <div class="metaLine mono" id="rcptMeta">-</div>
+          <div class="small muted hintKeys">
+            ショートカット：<span class="mono">← / →</span> でレシート切替（入力中は無効）
+          </div>
+        </div>
+
+        <div class="receiptBody">
+          <div class="small muted">レシート合計（このレシート内）</div>
+          <div class="row" style="grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div class="tile"><div class="k">売上</div><div class="v" id="r_sales">-</div></div>
+            <div class="tile"><div class="k">点数</div><div class="v" id="r_qty">-</div></div>
+            <div class="tile"><div class="k">商品行数</div><div class="v" id="r_lines">-</div></div>
           </div>
 
           <div style="margin-top:12px">
-            <div class="small muted">レシート合計</div>
-            <div class="row" style="grid-template-columns:1fr 1fr 1fr;gap:10px">
-              <div class="tile"><div class="k">売上</div><div class="v" id="r_sales">-</div></div>
-              <div class="tile"><div class="k">点数</div><div class="v" id="r_qty">-</div></div>
-              <div class="tile"><div class="k">商品行数</div><div class="v" id="r_lines">-</div></div>
-            </div>
-          </div>
-
-          <div style="margin-top:12px">
-            <div class="small muted">商品明細</div>
+            <div class="small muted">商品明細（このレシート内）</div>
             <table>
               <thead>
                 <tr>
@@ -177,3 +265,4 @@
   <script src="./app.js"></script>
 </body>
 </html>
+
