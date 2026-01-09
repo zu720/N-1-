@@ -3,18 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <h1>レシート見える君（トモズ）</h1>
-<div class="small muted">会員単位でレシート内容を可視化する検証ツール</div></title>
+  <title>レシート見える君（トモズ）</title>
 
   <style>
     :root{
-      --bg:#f6f7fb;
-      --card:#ffffff;
-      --text:#111827;
-      --muted:#6b7280;
-      --line:#e5e7eb;
-      --accent:#2563eb;
-      --accent2:#1d4ed8;
+      --bg:#f6f7fb; --card:#ffffff; --text:#111827; --muted:#6b7280;
+      --line:#e5e7eb; --accent:#2563eb; --accent2:#1d4ed8;
       --shadow: 0 10px 24px rgba(17,24,39,.08);
       --radius: 16px;
     }
@@ -27,30 +21,24 @@
       color:var(--text);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
     }
-    .wrap{ max-width:1100px; margin:28px auto; padding:0 16px; }
+    .wrap{ max-width:1200px; margin:28px auto; padding:0 16px; }
     .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      padding:18px;
-      margin:14px 0;
+      background:var(--card); border:1px solid var(--line);
+      border-radius: var(--radius); padding:18px; margin:14px 0;
       box-shadow: var(--shadow);
     }
-    h1{ font-size:16px; margin:0 0 10px 0; letter-spacing:.2px; }
+    h1{ font-size:16px; margin:0 0 6px 0; letter-spacing:.2px; }
     h2{ font-size:13px; margin:0 0 12px 0; color:var(--muted); font-weight:700; }
+    .sub{ font-size:12px; color:var(--muted); margin:0 0 10px 0; }
 
     .row{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-    @media(max-width:900px){ .row{ grid-template-columns:1fr; } }
+    .row4{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; }
+    @media(max-width:1000px){ .row,.row4{ grid-template-columns:1fr; } }
 
     label{ display:block; font-size:12px; color:var(--muted); margin:0 0 6px 2px; }
     input,select{
-      width:100%;
-      padding:11px 12px;
-      border-radius: 12px;
-      border:1px solid var(--line);
-      background:#fff;
-      color:var(--text);
-      outline:none;
+      width:100%; padding:11px 12px; border-radius: 12px;
+      border:1px solid var(--line); background:#fff; color:var(--text); outline:none;
       transition: box-shadow .15s, border-color .15s;
     }
     input:focus,select:focus{
@@ -61,36 +49,28 @@
     .drop{
       border:2px dashed rgba(37,99,235,.35);
       border-radius: var(--radius);
-      padding:16px;
-      text-align:center;
-      color:var(--muted);
+      padding:16px; text-align:center; color:var(--muted);
       background: linear-gradient(180deg, rgba(37,99,235,.05), rgba(37,99,235,.00));
     }
     .drop b{ color:var(--text); }
 
     .btn{
-      padding:10px 14px;
-      border-radius: 12px;
-      border:1px solid var(--line);
-      background:#fff;
-      color:var(--text);
-      cursor:pointer;
+      padding:10px 14px; border-radius: 12px; border:1px solid var(--line);
+      background:#fff; color:var(--text); cursor:pointer;
       transition: transform .06s, box-shadow .15s, border-color .15s;
     }
-    .btn:hover{
-      border-color: rgba(37,99,235,.45);
-      box-shadow: 0 10px 20px rgba(37,99,235,.10);
-    }
+    .btn:hover{ border-color: rgba(37,99,235,.45); box-shadow: 0 10px 20px rgba(37,99,235,.10); }
     .btn:active{ transform: translateY(1px); }
     .btn.primary{
       background: linear-gradient(180deg, rgba(37,99,235,1), rgba(29,78,216,1));
-      border-color: rgba(29,78,216,1);
-      color:#fff;
+      border-color: rgba(29,78,216,1); color:#fff;
     }
     .btn.primary:hover{ box-shadow: 0 14px 26px rgba(37,99,235,.22); }
 
-    .kpi{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
-    @media(max-width:900px){ .kpi{ grid-template-columns:1fr 1fr; } }
+    .kpi{ display:grid; grid-template-columns:repeat(6,1fr); gap:12px; }
+    @media(max-width:1100px){ .kpi{ grid-template-columns:repeat(3,1fr); } }
+    @media(max-width:700px){ .kpi{ grid-template-columns:repeat(2,1fr); } }
+
     .tile{
       border:1px solid var(--line);
       border-radius: var(--radius);
@@ -114,12 +94,9 @@
       border-bottom:1px solid var(--line);
       font-size:12px;
       text-align:left;
+      vertical-align: top;
     }
-    th{
-      background: #f9fafb;
-      color: var(--muted);
-      font-weight:800;
-    }
+    th{ background: #f9fafb; color: var(--muted); font-weight:800; }
     tr:last-child td{ border-bottom:none; }
     tbody tr:hover td{ background: rgba(37,99,235,.04); }
 
@@ -128,40 +105,43 @@
     .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
     .small{ font-size:12px; color:var(--muted); }
 
-    .receiptBox{
-      border:1px solid var(--line);
-      border-radius: var(--radius);
-      padding:0;
-      background: #fff;
-      overflow:hidden;
-    }
+    .split{ display:grid; grid-template-columns: 360px 1fr; gap:14px; align-items:start; }
+    @media(max-width:1000px){ .split{ grid-template-columns: 1fr; } }
 
-    /* ★ 固定ヘッダ（sticky） */
+    .listBox{ border:1px solid var(--line); border-radius: var(--radius); background:#fff; overflow:hidden; }
+    .listHeader{ padding:12px 14px; border-bottom:1px solid var(--line); background:#fff; position: sticky; top: 0; z-index: 5; }
+    .listBody{ max-height: 620px; overflow:auto; padding: 10px; }
+
+    .rcptBtn{
+      width:100%; text-align:left; border:1px solid var(--line);
+      background:#fff; border-radius: 14px; padding:10px 12px;
+      cursor:pointer; margin-bottom:10px;
+      transition: box-shadow .15s, border-color .15s, transform .06s;
+    }
+    .rcptBtn:hover{ border-color: rgba(37,99,235,.45); box-shadow: 0 10px 20px rgba(37,99,235,.10); }
+    .rcptBtn:active{ transform: translateY(1px); }
+    .rcptBtn.active{ border-color: rgba(37,99,235,.9); box-shadow: 0 12px 24px rgba(37,99,235,.18); }
+
+    .rcptTop{ display:flex; justify-content:space-between; gap:10px; font-weight:800; }
+    .rcptMid{ margin-top:4px; color:var(--muted); font-size:12px; }
+    .rcptBot{ margin-top:6px; display:flex; gap:10px; flex-wrap:wrap; font-size:12px; }
+    .pill{ border:1px solid var(--line); border-radius:999px; padding:2px 8px; background:#fff; }
+
+    .receiptBox{ border:1px solid var(--line); border-radius: var(--radius); background:#fff; overflow:hidden; }
     .receiptHeader{
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      position: sticky; top: 0; z-index: 10;
       background: rgba(255,255,255,.92);
       backdrop-filter: blur(6px);
       border-bottom: 1px solid var(--line);
       padding: 12px 14px;
     }
     .nav{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .metaLine{ margin-top:8px; font-weight:700; }
+    .metaLine{ margin-top:8px; font-weight:800; }
     .hintKeys{ margin-top:6px; }
-
     .receiptBody{ padding:14px; }
 
-    .bar{
-      height:10px;
-      border-radius:999px;
-      background: rgba(37,99,235,.12);
-      overflow:hidden;
-    }
-    .bar > div{
-      height:100%;
-      background: rgba(37,99,235,.70);
-    }
+    .bar{ height:10px; border-radius:999px; background: rgba(37,99,235,.12); overflow:hidden; }
+    .bar > div{ height:100%; background: rgba(37,99,235,.70); }
   </style>
 </head>
 
@@ -170,6 +150,7 @@
 
     <div class="card">
       <h1>レシート見える君（トモズ）</h1>
+      <div class="sub">会員×日時×店舗で擬似レシートを作り、レシート単位で明細を閲覧する検証ツール</div>
 
       <div class="drop" id="drop">
         <b>明細CSVをここにドラッグ&ドロップ</b>（または）
@@ -187,19 +168,65 @@
     </div>
 
     <div class="card">
-      <h2>① 会員を選ぶ</h2>
+      <h2>① 会員を選ぶ & 絞り込み</h2>
+
       <div class="row">
         <div>
           <label>会員（匿名会員番号）</label>
           <select id="member"><option value="">（CSV読込後に選択）</option></select>
         </div>
         <div>
-          <label>検索（部分一致）</label>
+          <label>会員検索（部分一致）</label>
           <input id="memberSearch" class="mono" placeholder="例: 7130..." />
         </div>
         <div>
-          <label>絞り込み：買上日（任意）</label>
+          <label>買上日（任意）</label>
           <input id="dateFilter" type="date" />
+        </div>
+      </div>
+
+      <div style="margin-top:12px" class="row4">
+        <div>
+          <label>店舗</label>
+          <select id="storeFilter"><option value="">（全て）</option></select>
+        </div>
+        <div>
+          <label>メーカー/取引先</label>
+          <select id="makerFilter"><option value="">（全て）</option></select>
+        </div>
+        <div>
+          <label>大分類</label>
+          <select id="catLFilter"><option value="">（全て）</option></select>
+        </div>
+        <div>
+          <label>中分類</label>
+          <select id="catMFilter"><option value="">（全て）</option></select>
+        </div>
+      </div>
+
+      <div style="margin-top:12px" class="row4">
+        <div>
+          <label>小分類</label>
+          <select id="catSFilter"><option value="">（全て）</option></select>
+        </div>
+        <div>
+          <label>JANコード</label>
+          <input id="janFilter" class="mono" placeholder="部分一致OK" />
+        </div>
+        <div>
+          <label>商品名</label>
+          <input id="itemFilter" placeholder="部分一致OK" />
+        </div>
+        <div>
+          <label>レシート一覧ソート</label>
+          <select id="rcptSort">
+            <option value="dt_desc">日時（新しい順）</option>
+            <option value="dt_asc">日時（古い順）</option>
+            <option value="sales_desc">売上（高い順）</option>
+            <option value="sales_asc">売上（低い順）</option>
+            <option value="qty_desc">点数（多い順）</option>
+            <option value="qty_asc">点数（少ない順）</option>
+          </select>
         </div>
       </div>
 
@@ -210,54 +237,82 @@
     </div>
 
     <div class="card">
-      <h2>② レシート単位で切り替え（商品名・金額・点数）</h2>
-
+      <h2>② 会員サマリー（条件内）</h2>
       <div class="kpi">
-        <div class="tile"><div class="k">レシート数</div><div class="v" id="k_rcpt">-</div></div>
-        <div class="tile"><div class="k">売上合計</div><div class="v" id="k_sales">-</div></div>
-        <div class="tile"><div class="k">点数合計</div><div class="v" id="k_qty">-</div></div>
-        <div class="tile"><div class="k">平均客単価（売上/レシート）</div><div class="v" id="k_atv">-</div></div>
+        <div class="tile"><div class="k">取引数（レシート）</div><div class="v" id="k_rcpt">-</div></div>
+        <div class="tile"><div class="k">購買金額</div><div class="v" id="k_sales">-</div></div>
+        <div class="tile"><div class="k">購買点数</div><div class="v" id="k_qty">-</div></div>
+        <div class="tile"><div class="k">来店日数</div><div class="v" id="k_days">-</div></div>
+        <div class="tile"><div class="k">利用店舗数</div><div class="v" id="k_stores">-</div></div>
+        <div class="tile"><div class="k">平均客単価</div><div class="v" id="k_atv">-</div></div>
       </div>
+      <div class="small muted" style="margin-top:8px">※ 絞り込み条件をかけた後の範囲で集計</div>
+    </div>
 
-      <div class="receiptBox" style="margin-top:12px">
-        <!-- ★ 固定ヘッダ（店名・日付・ナビ） -->
-        <div class="receiptHeader">
-          <div class="nav">
-            <button class="btn" id="prev">← 前のレシート</button>
-            <button class="btn" id="next">次のレシート →</button>
-            <span class="muted mono" id="rcptIndex">-</span>
+    <div class="card">
+      <h2>③ レシート一覧 → ワンクリックでジャンプ（＋左右キー）</h2>
+
+      <div class="split" style="margin-top:12px">
+        <div class="listBox">
+          <div class="listHeader">
+            <div class="muted small">レシート一覧（クリックで切替）</div>
+            <div class="mono" id="listInfo">-</div>
           </div>
-
-          <div class="metaLine mono" id="rcptMeta">-</div>
-          <div class="small muted hintKeys">
-            ショートカット：<span class="mono">← / →</span> でレシート切替（入力中は無効）
+          <div class="listBody" id="rcptList">
+            <div class="muted small">会員を選んで反映すると表示されます</div>
           </div>
         </div>
 
-        <div class="receiptBody">
-          <div class="small muted">レシート合計（このレシート内）</div>
-          <div class="row" style="grid-template-columns:1fr 1fr 1fr;gap:12px">
-            <div class="tile"><div class="k">売上</div><div class="v" id="r_sales">-</div></div>
-            <div class="tile"><div class="k">点数</div><div class="v" id="r_qty">-</div></div>
-            <div class="tile"><div class="k">商品行数</div><div class="v" id="r_lines">-</div></div>
+        <div class="receiptBox">
+          <div class="receiptHeader">
+            <div class="nav">
+              <button class="btn" id="prev">← 前</button>
+              <button class="btn" id="next">次 →</button>
+              <span class="muted mono" id="rcptIndex">-</span>
+
+              <span style="flex:1"></span>
+
+              <label class="muted small" style="margin:0">明細ソート</label>
+              <select id="itemSort" style="width:220px">
+                <option value="amt_desc">金額（高い順）</option>
+                <option value="amt_asc">金額（低い順）</option>
+                <option value="qty_desc">点数（多い順）</option>
+                <option value="qty_asc">点数（少ない順）</option>
+                <option value="name_asc">商品名（A→Z）</option>
+              </select>
+            </div>
+
+            <div class="metaLine mono" id="rcptMeta">-</div>
+            <div class="small muted hintKeys">ショートカット：<span class="mono">← / →</span> でレシート切替（入力中は無効）</div>
           </div>
 
-          <div style="margin-top:12px">
-            <div class="small muted">商品明細（このレシート内）</div>
-            <table>
-              <thead>
-                <tr>
-                  <th>商品名</th>
-                  <th class="right">金額</th>
-                  <th class="right">点数</th>
-                  <th style="width:25%">構成比（売上）</th>
-                </tr>
-              </thead>
-              <tbody id="items"></tbody>
-            </table>
+          <div class="receiptBody">
+            <div class="small muted">レシート合計（このレシート内）</div>
+            <div class="row" style="grid-template-columns:1fr 1fr 1fr;gap:12px">
+              <div class="tile"><div class="k">売上</div><div class="v" id="r_sales">-</div></div>
+              <div class="tile"><div class="k">点数</div><div class="v" id="r_qty">-</div></div>
+              <div class="tile"><div class="k">商品行数</div><div class="v" id="r_lines">-</div></div>
+            </div>
+
+            <div style="margin-top:12px">
+              <div class="small muted">商品明細（このレシート内）</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>商品名</th>
+                    <th class="right">金額</th>
+                    <th class="right">点数</th>
+                    <th style="width:25%">構成比（売上）</th>
+                  </tr>
+                </thead>
+                <tbody id="items"></tbody>
+              </table>
+            </div>
           </div>
         </div>
+
       </div>
+
     </div>
 
   </div>
