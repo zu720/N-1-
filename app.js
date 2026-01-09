@@ -4,15 +4,15 @@
 // 代わりに、会員+店舗+買上日+買上時間 から擬似レシートIDを作る。
 
 const COL = {
-  member: "匿名会員番号",
+  member: "会員番号/匿名会員番号",
   date: "買上日",
-  time: "買上時間",       // 必須：同日複数回を分けるため
-  storeName: "店舗名",     // 店舗コードがあるならそっちでもOK（下の COL.storeCode を使う）
-  // storeCode: "店舗コード", // ←ある場合はこれを有効にして storeKey を強化しても良い
-  item: "商品",
-  amount: "買上金額",
-  qty: "買上点数",         // 任意：無ければ 1 扱い
+  time: "買上時間",
+  storeName: "店舗名",
+  item: "商品名",
+  amount: "買上金額（会員）",
+  qty: "買上点数（会員）", // 任意：無ければ1扱い
 };
+
 
 let RAW = [];
 let HEADERS = [];
@@ -367,4 +367,5 @@ async function loadFile(file){
     setStatus("読込失敗: " + (err?.message ?? String(err)));
   }
 }
+
 
