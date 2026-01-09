@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>会員レシート：時系列タイムライン</title>
+  <style>
+    :root{--bg:#0b0f14;--p:#121826;--line:#273247;--t:#e6edf3;--m:#9aa4b2;--a:#60a5fa;}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--t);font-family:system-ui}
+    .wrap{max-width:1300px;margin:20px auto;padding:0 16px}
+    .card{background:rgba(18,24,38,.92);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+    h1{font-size:16px;margin:0 0 8px 0}
+    h2{font-size:14px;margin:0 0 10px 0;color:var(--m)}
+    label{display:block;font-size:12px;color:var(--m);margin:0 0 6px 2px}
+    input,select{width:100%;padding:10px;border-radius:12px;border:1px solid var(--line);background:#0f1522;color:var(--t)}
+    .drop{border:2px dashed #3a4967;border-radius:14px;padding:18px;text-align:center;color:var(--m)}
+    .btn{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#0f1522;color:var(--t);cursor:pointer}
+    .btn:hover{border-color:#3a4967}
+    .row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+    @media(max-width:1100px){.row{grid-template-columns:1fr 1fr}}
+    @media(max-width:700px){.row{grid-template-columns:1fr}}
+    .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    @media(max-width:1100px){.kpi{grid-template-columns:1fr 1fr}}
+    .tile{border:1px solid var(--line);border-radius:14px;padding:12px;background:#0f1522}
+    .tile .k{font-size:12px;color:var(--m)} .tile .v{font-size:18px;font-weight:800;margin-top:4px}
+    .muted{color:var(--m)}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;}
+    table{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+    th,td{padding:10px;border-bottom:1px solid rgba(39,50,71,.7);font-size:12px;text-align:left}
+    th{color:var(--m);background:#0f1522} tr:last-child td{border-bottom:none}
+    .right{text-align:right}
+    .bar{height:10px;border-radius:999px;background:rgba(96,165,250,.25);overflow:hidden}
+    .bar > div{height:100%;background:rgba(96,165,250,.78)}
+    .small{font-size:12px;color:var(--m)}
+    .warn{color:#fbbf24}
+
+    /* ===== Timeline layout ===== */
+    .layout{display:grid;grid-template-columns:380px 1fr;gap:12px;align-items:start}
+    @media(max-width:1100px){.layout{grid-template-columns:1fr}}
+    .pane{border:1px solid var(--line);border-radius:14px;background:#0f1522;overflow:hidden}
+    .paneHead{padding:12px;border-bottom:1px solid rgba(39,50,71,.7);display:flex;gap:10px;align-items:center;justify-content:space-between}
+    .paneBody{max-height:640px;overflow:auto}
+    .chip{font-size:12px;color:var(--m)}
+    .list{list-style:none;margin:0;padding:0}
+    .it{border-bottom:1px solid rgba(39,50,71,.55);padding:10px;cursor:pointer}
+    .it:hover{background:rgba(96,165,250,.08)}
+    .it.active{outline:2px solid rgba(96,165,250,.5);outline-offset:-2px;background:rgba(96,165,250,.10)}
+    .itTop{display:flex;justify-content:space-between;gap:10px}
+    .itMid{margin-top:4px;display:flex;justify-content:space-between;gap:10px}
+    .itAmt{font-weight:800}
+    .nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .receiptBox{border:1px solid var(--line);border-radius:14px;padding:12px;background:#0f1522}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>会員レシート：時系列タイムライン（取引ユニーク＝買上日×買上時間）</h1>
+      <div class="drop" id="drop">
+        <b>CSVをドラッグ&ドロップ</b>（または）
+        <input type="file" id="file" accept=".csv" />
+        <div class="small">
+          必須列（あなたのCSV）：買上日 / 買上時間 / 店舗名 / 商品名 / 買上金額（会員） / 買上点数（会員） / 会員番号/匿名会員番号
+        </div>
+      </div>
+      <div class="small muted" id="status">CSV未読込</div>
+      <div class="small warn" id="note"></div>
+    </div>
+
+    <div class="card">
+      <h2>① 会員を選ぶ ＋ 店舗名で絞り込み</h2>
+      <div class="row">
+        <div>
+          <label>会員（会員番号/匿名会員番号）</label>
+          <select id="member"><option value="">（CSV読込後に選択）</option></select>
+        </div>
+        <div>
+          <label>会員検索（部分一致）</label>
+          <input id="memberSearch" class="mono" placeholder="例: 7130..." />
+        </div>
+        <div>
+          <label>店舗名</label>
+          <select id="store"><option value="">（全て）</option></select>
+        </div>
+        <div>
+          <label>店舗検索（部分一致）</label>
+          <input id="storeSearch" placeholder="例: 高円寺 / ○○店" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div>
+          <label>買上日（任意）</label>
+          <input id="dateFilter" type="date" />
+        </div>
+        <div>
+          <label>タイムライン検索（商品名/店舗名）</label>
+          <input id="timelineSearch" placeholder="例: 牛乳 / 惣菜 / ○○店" />
+        </div>
+        <div style="display:flex;gap:10px;align-items:end;">
+          <button class="btn" id="apply" type="button">反映</button>
+          <button class="btn" id="clear" type="button">クリア</button>
+        </div>
+        <div class="small muted" style="display:flex;align-items:end;">
+          左のタイムラインをクリックでレシートにジャンプ
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>② 時系列タイムライン → レシート詳細</h2>
+
+      <div class="kpi">
+        <div class="tile"><div class="k">レシート数</div><div class="v" id="k_rcpt">-</div></div>
+        <div class="tile"><div class="k">売上合計</div><div class="v" id="k_sales">-</div></div>
+        <div class="tile"><div class="k">点数合計</div><div class="v" id="k_qty">-</div></div>
+        <div class="tile"><div class="k">平均客単価（売上/レシート）</div><div class="v" id="k_atv">-</div></div>
+      </div>
+
+      <div class="layout" style="margin-top:12px">
+        <!-- Timeline -->
+        <div class="pane">
+          <div class="paneHead">
+            <div>
+              <div class="chip">タイムライン</div>
+              <div class="small muted mono" id="tlMeta">-</div>
+            </div>
+            <button class="btn" id="jumpNow" type="button">現在位置へ</button>
+          </div>
+          <div class="paneBody">
+            <ul class="list" id="timeline"></ul>
+          </div>
+        </div>
+
+        <!-- Receipt detail -->
+        <div class="receiptBox">
+          <div class="nav">
+            <button class="btn" id="prev">← 前</button>
+            <button class="btn" id="next">次 →</button>
+            <span class="muted mono" id="rcptIndex">-</span>
+          </div>
+
+          <div style="margin-top:10px">
+            <div class="small muted">レシート情報（買上日×買上時間でユニーク化）</div>
+            <div class="mono" id="rcptMeta">-</div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div class="small muted">レシート合計</div>
+            <div class="row" style="grid-template-columns:1fr 1fr 1fr;gap:10px">
+              <div class="tile"><div class="k">売上</div><div class="v" id="r_sales">-</div></div>
+              <div class="tile"><div class="k">点数</div><div class="v" id="r_qty">-</div></div>
+              <div class="tile"><div class="k">商品行数</div><div class="v" id="r_lines">-</div></div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div class="small muted">商品明細</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>商品名</th>
+                  <th class="right">金額</th>
+                  <th class="right">点数</th>
+                  <th style="width:25%">構成比（売上）</th>
+                </tr>
+              </thead>
+              <tbody id="items"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
