@@ -225,6 +225,15 @@
           <label>商品名</label>
           <input id="itemFilter" placeholder="部分一致OK" />
         </div>
+<div>
+  <label>商品絞り込みの表示モード</label>
+  <select id="productScope">
+    <option value="detail_only">一致した明細だけ表示（軽い）</option>
+    <option value="receipt_all">一致レシートを抽出し、明細は全表示（同時購入が見える）</option>
+  </select>
+</div>
+
+        
         <div>
           <label>レシート一覧ソート</label>
           <select id="rcptSort">
@@ -328,5 +337,6 @@
   <script src="./app.js"></script>
 </body>
 </html>
+
 
 
